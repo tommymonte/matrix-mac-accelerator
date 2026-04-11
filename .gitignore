@@ -1,0 +1,39 @@
+# Private planning docs
+matrix_mac_accelerator_implementation.md
+
+# Vivado
+*.jou
+*.log
+*.str
+.Xil/
+vivado_project/
+*.bit
+*.ltx
+*.mcs
+*.prm
+*.xsa
+*.runs/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.srcs/
+NA/
+
+# Verilator
+obj_dir/
+*.vcd
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.env
+.venv
+sim_build/
+results.xml
