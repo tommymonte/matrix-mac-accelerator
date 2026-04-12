@@ -1,31 +1,35 @@
 # Implementation Roadmap
 
-## Step 0 — Environment & repo setup
+## Step 0 — Environment & repo setup ✅ DONE
 **Deliverable:** structured repo, working toolchain.
 
 - [x] Folder structure (`rtl/`, `tb/cocotb/`, `tb/sv/`, `constraints/`, `scripts/`, `docs/`)
 - [x] `.gitignore` for Vivado and Python artifacts
-- [ ] Verify toolchain: Verilator, cocotb, GTKWave, Vivado 2023.x
+- [x] Verify toolchain: Verilator 5.020 ✅ | cocotb 2.0.1 ✅ | GTKWave ✅ | Vivado — host-only, deferred to Step 6
 - [x] Initial README with description and WIP badge
-- [ ] `make sim` runs a Verilator hello-world with no errors
+- [x] `make sim` → `PASS — hello-world OK` (zero `-Wall` warnings)
 
 ---
 
-## Step 1 — Single MAC Unit
+## Step 1 — Single MAC Unit ✅ DONE
 **Deliverable:** Q8.8 Multiply-Accumulate unit verified in isolation.
 
 ### RTL — `rtl/mac_unit.sv`
-- [ ] Inputs: two `logic signed [15:0]` operands (Q8.8), 32-bit `acc_in`, `clk`, `rst_n`, `en`
-- [ ] Output: `acc_out [31:0]`
-- [ ] 1-stage pipeline: register on `acc_out`
-- [ ] Optional saturation logic
-- [ ] Package `rtl/pkg/types_pkg.sv` with typedefs `q8_8_t`, `mac_acc_t`
+- [x] Inputs: two `logic signed [15:0]` operands (Q8.8), 32-bit `acc_in`, `clk`, `rst_n`, `en`
+- [x] Output: `acc_out [31:0]`
+- [x] 1-stage pipeline: register on `acc_out`
+- [x] Saturation: skipped (2's complement wrap); array-level sizing is the v1 contract
+- [x] Package `rtl/pkg/types_pkg.sv` with `Q_FRAC`, `q8_8_t`, `mac_acc_t`
 
 ### Testbench — `tb/cocotb/test_mac.py`
-- [ ] Directed tests: 0×0, 1×1, max×max, neg×neg, neg×pos
-- [ ] Random test: 1000 vectors against a Python reference model (`numpy` with `int16`/`int32`)
-- [ ] Bit-exact comparison between DUT and model
-- [ ] Generate `dump.vcd` for GTKWave inspection
+- [x] Directed tests: 0×0, 1×1, max×max, neg×neg, neg×pos, mixed, hold, reset
+- [x] Random test: 1000 vectors against a Python reference (native int → wrap-to-int32)
+- [x] Bit-exact comparison between DUT and model — **6/6 PASS**
+- [x] Generate `dump.vcd` for GTKWave inspection
+
+### Toolchain note
+- Simulator: **Icarus Verilog 12.0** (cocotb 2.0.1 requires Verilator ≥ 5.036; Ubuntu 24.04 ships 5.020).
+- Verilator 5.020 kept for lint only via `make lint` (`-Wall --Wpedantic` clean).
 
 ---
 
