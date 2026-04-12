@@ -175,3 +175,97 @@ async def test_random(dut):
         b = random.randint(-32768, 32767)
         acc_in = random.randint(-(1 << 31), (1 << 31) - 1)
         await drive_and_check(dut, a, b, acc_in)
+
+
+# ---------------------------------------------------------------------------
+# Performance benchmark
+# ---------------------------------------------------------------------------
+# Baseline assumption for the software reference is a PicoRV32 softcore
+# (the same one used in /home/tommasomontedoro/picorv32/sim) running at
+# ~50 MHz on Arty A7-35T. A naive Q8.8 MAC in C compiles to roughly:
+#     lh  a0, 0(t0)   ; load a
+#     lh  a1, 0(t1)   ; load b
+#     mul a2, a0, a1  ; 32-bit product
+#     add s0, s0, a2  ; accumulate
+# plus loop overhead. PicoRV32 multi-cycle MUL + fetch stalls put this at
+# ~8 cycles/MAC conservatively. Change SW_CYCLES_PER_MAC if you re-measure
+# on the real softcore (that's the honest number for the CV).
+
+HW_CLK_PERIOD_NS = 10        # 100 MHz target for the accelerator
+SW_CYCLES_PER_MAC = 8        # PicoRV32 estimate, see note above
+SW_CLK_MHZ = 50              # PicoRV32 Fmax on Arty A7-35T
+
+
+@cocotb.test()
+async def test_perf(dut):
+    """Measure sustained MAC throughput and project speedup vs software.
+
+    This is not a pass/fail correctness test in the traditional sense — it
+    still checks the final accumulator value, but its primary output is the
+    [PERF] log block printed at the end.
+    """
+    cocotb.start_soon(Clock(dut.clk, HW_CLK_PERIOD_NS, unit="ns").start())
+    await reset(dut)
+
+    # One 4x4 matrix multiplication requires 4*4*4 = 64 MACs.
+    N = 64
+
+    # Drive N back-to-back MACs with en=1. Because the DUT has 1-cycle
+    # latency and no pipeline bubbles, we expect exactly N clocks to
+    # retire N MACs once we are past the initial sync edge.
+    golden = 0
+    await RisingEdge(dut.clk)
+    dut.en.value = 1
+    dut.acc_in.value = 0     # feed the accumulator with its own past output via golden
+    t_start = cocotb.utils.get_sim_time("ns")
+    for i in range(N):
+        a = (i + 1) & 0xFFFF
+        b = (i + 3) & 0xFFFF
+        # Self-accumulating pattern: acc_in <- previous acc_out.
+        # We mirror the arithmetic in Python to verify at the end.
+        dut.a.value = a
+        dut.b.value = b
+        dut.acc_in.value = golden & MASK32
+        golden = to_signed32(golden + a * b)
+        await RisingEdge(dut.clk)
+    await Timer(1, unit="ps")
+    t_end = cocotb.utils.get_sim_time("ns")
+
+    # Correctness: after N cycles acc_out must equal the golden accumulator.
+    actual = dut.acc_out.value.signed_integer
+    assert actual == golden, f"PERF run diverged: expected {golden}, got {actual}"
+
+    # ---- Numbers ----
+    hw_ns = t_end - t_start
+    hw_cycles = round(hw_ns / HW_CLK_PERIOD_NS)
+    hw_mhz = 1000.0 / HW_CLK_PERIOD_NS
+
+    sw_cycles = N * SW_CYCLES_PER_MAC
+    sw_ns = sw_cycles * (1000.0 / SW_CLK_MHZ)
+
+    speedup_cycles = sw_cycles / hw_cycles
+    speedup_wall = sw_ns / hw_ns
+
+    # Projection for Step 2 (4x4 array, 16 parallel MACs, ~4 cycles/matmul).
+    array_cycles = 4
+    array_ns = array_cycles * HW_CLK_PERIOD_NS
+    array_speedup = sw_ns / array_ns
+
+    # ---- Report ----
+    log = dut._log.info
+    log("=" * 64)
+    log("[PERF] mac_unit benchmark  (N = %d MACs = one 4x4 matmul)" % N)
+    log("=" * 64)
+    log("  HW single-MAC latency : 1 cycle  (%d ns @ %.0f MHz)" % (HW_CLK_PERIOD_NS, hw_mhz))
+    log("  HW sustained rate     : 1 MAC / cycle  (no pipeline bubbles)")
+    log("  HW for %d MACs        : %d cycles = %.0f ns" % (N, hw_cycles, hw_ns))
+    log(" ")
+    log("  SW baseline assumption: %d cycles/MAC on PicoRV32 @ %d MHz" % (SW_CYCLES_PER_MAC, SW_CLK_MHZ))
+    log("  SW for %d MACs        : %d cycles = %.0f ns" % (N, sw_cycles, sw_ns))
+    log(" ")
+    log("  Speedup (cycles)      : %.1fx" % speedup_cycles)
+    log("  Speedup (wall-clock)  : %.1fx   <-- single MAC unit, serial" % speedup_wall)
+    log(" ")
+    log("  Projection Step 2 (4x4 array, 16 parallel MACs):")
+    log("    64 MACs in ~%d cycles = %.0f ns  ->  speedup ~%.0fx" % (array_cycles, array_ns, array_speedup))
+    log("=" * 64)

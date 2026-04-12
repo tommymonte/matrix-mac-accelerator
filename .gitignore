@@ -1,6 +1,6 @@
 # Private planning docs
 matrix_mac_accelerator_implementation.md
-
+docs-learning/
 # Vivado
 *.jou
 *.log
