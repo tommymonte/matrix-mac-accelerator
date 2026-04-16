@@ -33,20 +33,18 @@
 
 ---
 
-## Step 2 — 4×4 MAC Array
+## Step 2 — 4×4 MAC Array ✅ DONE
 **Deliverable:** array of 16 MAC instances computing C = A·B in fixed-point.
 
 ### RTL — `rtl/mac_array.sv`
-- [ ] Inputs: matrices A and B as packed arrays `logic signed [15:0] a_matrix [0:3][0:3]`
-- [ ] Output: matrix C `logic signed [31:0] c_matrix [0:3][0:3]`
-- [ ] 16 instantiated MACs, each computing one C[i][j] over 4 cycles iterating on k
-- [ ] Control FSM: `IDLE → LOAD → COMPUTE → DONE`
-- [ ] `done` signal asserted when computation completes
+- [x] Flat-bus ports (`a_flat[255:0]`, `b_flat[255:0]`, `c_flat[511:0]`) to work around Icarus VPI 2-D unpacked-array limit
+- [x] 16 instantiated MACs, each computing one C[i][j] over k = 0..3
+- [x] Control FSM: `IDLE → LOAD → COMPUTE×4 → DONE` (6-cycle latency)
+- [x] One-cycle `done` pulse asserted when `c_flat` is valid
 
-### Testbench — `tb/cocotb/test_array.py`
-- [ ] Tests on known matrices (identity, zero, random)
-- [ ] Reference model: `numpy.matmul` with Q8.8 scaling
-- [ ] At least 100 random matrices, bit-exact
+### Testbench — `tb/cocotb/test_array/test_array.py`
+- [x] Directed: zero, identity, identity×M, ones, negatives, known-result, max pos/neg, back-to-back runs
+- [x] 100 random 4×4 matrices vs. NumPy golden model — **10/10 PASS**, bit-exact
 
 ---
 
