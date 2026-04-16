@@ -32,6 +32,7 @@ module mac_array
   input  logic       rst_n,
   input  logic       start,
   output logic       done,
+  output logic       busy,
   input  logic [255:0] a_flat,   // 16 × q8_8_t  (Q8.8, 16-bit signed)
   input  logic [255:0] b_flat,   // 16 × q8_8_t
   output logic [511:0] c_flat    // 16 × mac_acc_t (32-bit signed)
@@ -110,6 +111,7 @@ module mac_array
   logic mac_en;
   assign mac_en = (state_r == COMPUTE);
   assign done   = (state_r == DONE);
+  assign busy   = (state_r != IDLE);
 
   // -------------------------------------------------------------------------
   // 16 mac_unit instances — 4×4 generate grid
