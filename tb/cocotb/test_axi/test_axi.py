@@ -73,51 +73,43 @@ async def reset(dut, cycles: int = 4):
 # AXI4-Lite master primitives
 # ----------------------------------------------------------------------------
 
-async def axi_write(dut, addr: int, data: int, timeout_cycles: int = 20) -> int:
+async def axi_write(dut, addr: int, data: int, timeout_cycles: int = 40) -> int:
     """
     Perform a single AXI4-Lite write transaction.
 
     Returns BRESP (2 bits). Raises on timeout.
+
+    Handshake strategy: we drive AWVALID/WVALID/BREADY high and wait for BVALID.
+    BVALID implies the AW/W handshake already happened (the slave cannot produce
+    a B response without first accepting AW/W). Polling {AW,W}READY directly is
+    unreliable because they may be combinational and drop on the same edge as
+    the handshake — after NBA we'd see them low even though the handshake fired.
     """
-    # Assert AW + W together (our slave accepts them atomically).
     dut.s_axi_awaddr.value  = addr & 0xFF
     dut.s_axi_awvalid.value = 1
     dut.s_axi_wdata.value   = data & 0xFFFFFFFF
     dut.s_axi_wvalid.value  = 1
-    dut.s_axi_bready.value  = 1  # ready to receive response
+    dut.s_axi_bready.value  = 1
 
-    # Wait for both AWREADY and WREADY on the same clock edge
-    for _ in range(timeout_cycles):
-        await RisingEdge(dut.clk)
-        await Timer(1, unit="ps")
-        if int(dut.s_axi_awready.value) and int(dut.s_axi_wready.value):
-            break
-    else:
-        raise TimeoutError(f"axi_write @0x{addr:02X}: AW/W handshake timeout")
-
-    # Deassert AW/W after handshake
-    dut.s_axi_awvalid.value = 0
-    dut.s_axi_wvalid.value  = 0
-
-    # Wait for BVALID
     for _ in range(timeout_cycles):
         await RisingEdge(dut.clk)
         await Timer(1, unit="ps")
         if int(dut.s_axi_bvalid.value):
             bresp = int(dut.s_axi_bresp.value)
-            break
-    else:
-        raise TimeoutError(f"axi_write @0x{addr:02X}: B channel timeout")
+            dut.s_axi_awvalid.value = 0
+            dut.s_axi_wvalid.value  = 0
+            dut.s_axi_bready.value  = 0
+            return bresp
 
-    dut.s_axi_bready.value = 0
-    return bresp
+    raise TimeoutError(f"axi_write @0x{addr:02X}: no BVALID in {timeout_cycles} cycles")
 
 
-async def axi_read(dut, addr: int, timeout_cycles: int = 20):
+async def axi_read(dut, addr: int, timeout_cycles: int = 40):
     """
     Perform a single AXI4-Lite read transaction.
 
-    Returns (rdata, rresp).
+    Returns (rdata, rresp). Same rationale as axi_write: wait for RVALID, which
+    guarantees the AR handshake has completed.
     """
     dut.s_axi_araddr.value  = addr & 0xFF
     dut.s_axi_arvalid.value = 1
@@ -126,25 +118,14 @@ async def axi_read(dut, addr: int, timeout_cycles: int = 20):
     for _ in range(timeout_cycles):
         await RisingEdge(dut.clk)
         await Timer(1, unit="ps")
-        if int(dut.s_axi_arready.value):
-            break
-    else:
-        raise TimeoutError(f"axi_read @0x{addr:02X}: AR handshake timeout")
-
-    dut.s_axi_arvalid.value = 0
-
-    for _ in range(timeout_cycles):
-        await RisingEdge(dut.clk)
-        await Timer(1, unit="ps")
         if int(dut.s_axi_rvalid.value):
             rdata = int(dut.s_axi_rdata.value)
             rresp = int(dut.s_axi_rresp.value)
-            break
-    else:
-        raise TimeoutError(f"axi_read @0x{addr:02X}: R channel timeout")
+            dut.s_axi_arvalid.value = 0
+            dut.s_axi_rready.value  = 0
+            return rdata, rresp
 
-    dut.s_axi_rready.value = 0
-    return rdata, rresp
+    raise TimeoutError(f"axi_read @0x{addr:02X}: no RVALID in {timeout_cycles} cycles")
 
 
 # ----------------------------------------------------------------------------

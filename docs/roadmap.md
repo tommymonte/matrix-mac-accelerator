@@ -48,22 +48,23 @@
 
 ---
 
-## Step 3 — AXI4-Lite Slave
+## Step 3 — AXI4-Lite Slave ✅ DONE
 **Deliverable:** AXI4-Lite slave interface compliant with the ARM IHI 0022 spec.
 
 ### RTL — `rtl/axi_slave.sv`
-- [ ] All 5 channels: AW, W, B, AR, R with correct handshake
-- [ ] Internal register file:
-  - `0x00` CTRL (bit 0 = start, bit 1 = reset)
-  - `0x04` STATUS (bit 0 = busy, bit 1 = done)
-  - `0x10–0x4C` matrix A (16 words)
-  - `0x50–0x8C` matrix B (16 words)
-  - `0x90–0xCC` matrix C (read-only, 16 words)
-- [ ] `SLVERR` response on unmapped addresses
+- [x] All 5 channels: AW, W, B, AR, R with correct handshake (two 2-state FSMs)
+- [x] Internal register file:
+  - `0x00` CTRL   (W1P self-clearing: bit0 = start, bit1 = soft_reset)
+  - `0x04` STATUS (RO bit0 = busy live; W1C bit1 = done sticky)
+  - `0x10–0x4C` matrix A (16 RW words)
+  - `0x50–0x8C` matrix B (16 RW words)
+  - `0x90–0xCC` matrix C (read-only, 16 words sliced from c_flat)
+- [x] `SLVERR` response on unmapped / unaligned / write-to-RO accesses
 
-### Testbench — `tb/cocotb/test_axi.py`
-- [ ] Uses `cocotbext-axi` as AXI master
-- [ ] Tests: single write, single read, write+read back, invalid address
+### Testbench — `tb/cocotb/test_axi/test_axi.py`
+- [x] Hand-rolled AXI4-Lite master (no `cocotbext-axi` dependency yet)
+- [x] 9 tests: reset defaults, A/B R+W, C read-only, unmapped+unaligned SLVERR,
+      CTRL W1P pulse, STATUS sticky/W1C, STATUS.busy pass-through, 200-op random stress
 
 ---
 
