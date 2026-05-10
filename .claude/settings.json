@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vlog -version)",
+      "Bash(make lint_sva)"
+    ]
+  }
+}
