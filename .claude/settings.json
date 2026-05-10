@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(vlog -version)",
-      "Bash(make lint_sva)"
+      "Bash(make lint_sva)",
+      "Bash(git rm *)",
+      "Bash(git check-ignore *)"
     ]
   }
 }
