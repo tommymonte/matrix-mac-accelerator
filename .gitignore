@@ -38,3 +38,6 @@ build/
 .venv
 sim_build/
 results.xml
+
+# SymbiYosys formal verification output
+tb/formal/*/

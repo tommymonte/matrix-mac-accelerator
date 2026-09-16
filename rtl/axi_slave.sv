@@ -32,49 +32,49 @@ module axi_slave
   parameter int ADDR_WIDTH = 8,
   parameter int DATA_WIDTH = 32
 )(
-  input  logic                    clk,
-  input  logic                    rst_n,
+  input  wire                     clk,
+  input  wire                     rst_n,
 
   // ---- AXI4-Lite ----
   // Write address
-  input  logic [ADDR_WIDTH-1:0]   s_axi_awaddr,
+  input  wire [ADDR_WIDTH-1:0]    s_axi_awaddr,
   /* verilator lint_off UNUSEDSIGNAL */
-  input  logic [2:0]              s_axi_awprot,
+  input  wire [2:0]               s_axi_awprot,
   /* verilator lint_on UNUSEDSIGNAL */
-  input  logic                    s_axi_awvalid,
+  input  wire                     s_axi_awvalid,
   output logic                    s_axi_awready,
   // Write data
-  input  logic [DATA_WIDTH-1:0]   s_axi_wdata,
+  input  wire [DATA_WIDTH-1:0]    s_axi_wdata,
   /* verilator lint_off UNUSEDSIGNAL */
-  input  logic [DATA_WIDTH/8-1:0] s_axi_wstrb,
+  input  wire [DATA_WIDTH/8-1:0]  s_axi_wstrb,
   /* verilator lint_on UNUSEDSIGNAL */
-  input  logic                    s_axi_wvalid,
+  input  wire                     s_axi_wvalid,
   output logic                    s_axi_wready,
   // Write response
   output logic [1:0]              s_axi_bresp,
   output logic                    s_axi_bvalid,
-  input  logic                    s_axi_bready,
+  input  wire                     s_axi_bready,
   // Read address
-  input  logic [ADDR_WIDTH-1:0]   s_axi_araddr,
+  input  wire [ADDR_WIDTH-1:0]    s_axi_araddr,
   /* verilator lint_off UNUSEDSIGNAL */
-  input  logic [2:0]              s_axi_arprot,
+  input  wire [2:0]               s_axi_arprot,
   /* verilator lint_on UNUSEDSIGNAL */
-  input  logic                    s_axi_arvalid,
+  input  wire                     s_axi_arvalid,
   output logic                    s_axi_arready,
   // Read data
   output logic [DATA_WIDTH-1:0]   s_axi_rdata,
   output logic [1:0]              s_axi_rresp,
   output logic                    s_axi_rvalid,
-  input  logic                    s_axi_rready,
+  input  wire                     s_axi_rready,
 
   // ---- Core-facing ports (wired to mac_array in Step 4) ----
   output logic                    start_pulse,
   output logic                    soft_reset,
-  input  logic                    busy,
-  input  logic                    done,          // one-cycle pulse from mac_array
+  input  wire                     busy,
+  input  wire                     done,          // one-cycle pulse from mac_array
   output logic [255:0]            a_flat,        // 16 × q8_8_t
   output logic [255:0]            b_flat,        // 16 × q8_8_t
-  input  logic [511:0]            c_flat         // 16 × mac_acc_t  (RO)
+  input  wire [511:0]             c_flat         // 16 × mac_acc_t  (RO)
 );
 
   // -------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 SHELL := /bin/bash
 REPO_ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
-.PHONY: sim test_mac test_array test_axi test_top lint lint_sva clean
+.PHONY: sim test_mac test_array test_axi test_top lint lint_sva synth clean coverage
 
 ## Default simulation target: run all cocotb testbenches
 sim: test_mac test_array test_axi test_top
@@ -57,6 +57,12 @@ lint_sva:
 	    $(REPO_ROOT)tb/sv/bind_top.sv \
 	    --top-module top
 
+## Step 6: Vivado synthesis + P&R (requires Vivado in PATH)
+synth:
+	vivado -mode batch -source $(REPO_ROOT)scripts/synth.tcl \
+	    -log $(REPO_ROOT)build/vivado/vivado.log \
+	    -journal $(REPO_ROOT)build/vivado/vivado.jou
+
 clean:
 	$(MAKE) -C $(REPO_ROOT)tb/cocotb clean 2>/dev/null || true
 	$(MAKE) -C $(REPO_ROOT)tb/cocotb/test_array clean 2>/dev/null || true
@@ -67,3 +73,8 @@ clean:
 	rm -rf $(REPO_ROOT)tb/cocotb/test_axi/sim_build $(REPO_ROOT)tb/cocotb/test_axi/results.xml $(REPO_ROOT)tb/cocotb/test_axi/dump.vcd
 	$(MAKE) -C $(REPO_ROOT)tb/cocotb/test_top clean 2>/dev/null || true
 	rm -rf $(REPO_ROOT)tb/cocotb/test_top/sim_build $(REPO_ROOT)tb/cocotb/test_top/results.xml $(REPO_ROOT)tb/cocotb/test_top/dump.vcd
+	rm -rf $(REPO_ROOT)build/
+
+	## Run Verilator code coverage (separate target; requires Verilator >= 5.036)
+	coverage:
+		./scripts/coverage/run_coverage.sh

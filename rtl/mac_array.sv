@@ -25,18 +25,19 @@
 //
 // Overflow: v1 contract — 32-bit wrapping, no saturation.
 
-module mac_array
-  import types_pkg::*;
-(
-  input  logic       clk,
-  input  logic       rst_n,
-  input  logic       start,
+module mac_array (
+  input  wire        clk,
+  input  wire        rst_n,
+  input  wire        start,
   output logic       done,
   output logic       busy,
-  input  logic [255:0] a_flat,   // 16 × q8_8_t  (Q8.8, 16-bit signed)
-  input  logic [255:0] b_flat,   // 16 × q8_8_t
+  input  wire [255:0] a_flat,   // 16 × q8_8_t  (Q8.8, 16-bit signed)
+  input  wire [255:0] b_flat,   // 16 × q8_8_t
   output logic [511:0] c_flat    // 16 × mac_acc_t (32-bit signed)
 );
+
+  typedef logic signed [15:0] q8_8_t;
+  typedef logic signed [31:0] mac_acc_t;
 
   // -------------------------------------------------------------------------
   // Unpack flat inputs to typed 2-D arrays used by the datapath
@@ -47,8 +48,8 @@ module mac_array
   generate
     for (genvar ui = 0; ui < 4; ui++) begin : g_unpack_row
       for (genvar uj = 0; uj < 4; uj++) begin : g_unpack_col
-        assign a_in[ui][uj] = q8_8_t'(a_flat[16*(4*ui+uj) +: 16]);
-        assign b_in[ui][uj] = q8_8_t'(b_flat[16*(4*ui+uj) +: 16]);
+        assign a_in[ui][uj] = $signed(a_flat[16*(4*ui+uj) +: 16]);
+        assign b_in[ui][uj] = $signed(b_flat[16*(4*ui+uj) +: 16]);
       end
     end
   endgenerate

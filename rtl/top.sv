@@ -10,28 +10,28 @@ module top
   parameter int ADDR_WIDTH = 8,
   parameter int DATA_WIDTH = 32
 )(
-  input  logic                      clk,
-  input  logic                      rst_n,
+  input  wire                       clk,
+  input  wire                       rst_n,
 
-  input  logic [ADDR_WIDTH-1:0]     s_axi_awaddr,
-  input  logic [2:0]                s_axi_awprot,
-  input  logic                      s_axi_awvalid,
+  input  wire [ADDR_WIDTH-1:0]      s_axi_awaddr,
+  input  wire [2:0]                 s_axi_awprot,
+  input  wire                       s_axi_awvalid,
   output logic                      s_axi_awready,
-  input  logic [DATA_WIDTH-1:0]     s_axi_wdata,
-  input  logic [DATA_WIDTH/8-1:0]   s_axi_wstrb,
-  input  logic                      s_axi_wvalid,
+  input  wire [DATA_WIDTH-1:0]      s_axi_wdata,
+  input  wire [DATA_WIDTH/8-1:0]    s_axi_wstrb,
+  input  wire                       s_axi_wvalid,
   output logic                      s_axi_wready,
   output logic [1:0]                s_axi_bresp,
   output logic                      s_axi_bvalid,
-  input  logic                      s_axi_bready,
-  input  logic [ADDR_WIDTH-1:0]     s_axi_araddr,
-  input  logic [2:0]                s_axi_arprot,
-  input  logic                      s_axi_arvalid,
+  input  wire                       s_axi_bready,
+  input  wire [ADDR_WIDTH-1:0]      s_axi_araddr,
+  input  wire [2:0]                 s_axi_arprot,
+  input  wire                       s_axi_arvalid,
   output logic                      s_axi_arready,
   output logic [DATA_WIDTH-1:0]     s_axi_rdata,
   output logic [1:0]                s_axi_rresp,
   output logic                      s_axi_rvalid,
-  input  logic                      s_axi_rready
+  input  wire                       s_axi_rready
 );
 
   logic        start_pulse, soft_reset;
